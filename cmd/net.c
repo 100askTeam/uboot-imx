@@ -9,6 +9,8 @@
  */
 #include <common.h>
 #include <command.h>
+#include <env.h>
+#include <image.h>
 #include <net.h>
 
 static int netboot_common(enum proto_t, cmd_tbl_t *, int, char * const []);
@@ -185,13 +187,16 @@ static int netboot_common(enum proto_t proto, cmd_tbl_t *cmdtp, int argc,
 
 	net_boot_file_name_explicit = false;
 
-	/* pre-set load_addr */
+	/* pre-set image_load_addr */
 	s = env_get("loadaddr");
 	if (s != NULL)
-		load_addr = simple_strtoul(s, NULL, 16);
+		image_load_addr = simple_strtoul(s, NULL, 16);
 
 	switch (argc) {
 	case 1:
+		/* refresh bootfile name from env */
+		copy_filename(net_boot_file_name, env_get("bootfile"),
+			      sizeof(net_boot_file_name));
 		break;
 
 	case 2:	/*
@@ -202,7 +207,10 @@ static int netboot_common(enum proto_t proto, cmd_tbl_t *cmdtp, int argc,
 		 */
 		addr = simple_strtoul(argv[1], &end, 16);
 		if (end == (argv[1] + strlen(argv[1]))) {
-			load_addr = addr;
+			image_load_addr = addr;
+			/* refresh bootfile name from env */
+			copy_filename(net_boot_file_name, env_get("bootfile"),
+				      sizeof(net_boot_file_name));
 		} else {
 			net_boot_file_name_explicit = true;
 			copy_filename(net_boot_file_name, argv[1],
@@ -211,7 +219,7 @@ static int netboot_common(enum proto_t proto, cmd_tbl_t *cmdtp, int argc,
 		break;
 
 	case 3:
-		load_addr = simple_strtoul(argv[1], NULL, 16);
+		image_load_addr = simple_strtoul(argv[1], NULL, 16);
 		net_boot_file_name_explicit = true;
 		copy_filename(net_boot_file_name, argv[2],
 			      sizeof(net_boot_file_name));
@@ -220,8 +228,8 @@ static int netboot_common(enum proto_t proto, cmd_tbl_t *cmdtp, int argc,
 
 #ifdef CONFIG_CMD_TFTPPUT
 	case 4:
-		if (strict_strtoul(argv[1], 16, &save_addr) < 0 ||
-		    strict_strtoul(argv[2], 16, &save_size) < 0) {
+		if (strict_strtoul(argv[1], 16, &image_save_addr) < 0 ||
+		    strict_strtoul(argv[2], 16, &image_save_size) < 0) {
 			printf("Invalid address/size\n");
 			return CMD_RET_USAGE;
 		}

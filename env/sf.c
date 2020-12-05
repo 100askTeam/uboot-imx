@@ -10,26 +10,15 @@
  */
 #include <common.h>
 #include <dm.h>
-#include <environment.h>
+#include <env.h>
+#include <env_internal.h>
 #include <malloc.h>
 #include <spi.h>
 #include <spi_flash.h>
 #include <search.h>
 #include <errno.h>
 #include <dm/device-internal.h>
-
-#ifndef CONFIG_ENV_SPI_BUS
-# define CONFIG_ENV_SPI_BUS	CONFIG_SF_DEFAULT_BUS
-#endif
-#ifndef CONFIG_ENV_SPI_CS
-# define CONFIG_ENV_SPI_CS	CONFIG_SF_DEFAULT_CS
-#endif
-#ifndef CONFIG_ENV_SPI_MAX_HZ
-# define CONFIG_ENV_SPI_MAX_HZ	CONFIG_SF_DEFAULT_SPEED
-#endif
-#ifndef CONFIG_ENV_SPI_MODE
-# define CONFIG_ENV_SPI_MODE	CONFIG_SF_DEFAULT_MODE
-#endif
+#include <u-boot/crc.h>
 
 #ifndef CONFIG_SPL_BUILD
 #define CMD_SAVEENV
@@ -42,8 +31,6 @@ static ulong env_offset		= CONFIG_ENV_OFFSET;
 static ulong env_new_offset	= CONFIG_ENV_OFFSET_REDUND;
 #endif
 
-#define ACTIVE_FLAG	1
-#define OBSOLETE_FLAG	0
 #endif /* CONFIG_ENV_OFFSET_REDUND */
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -58,9 +45,10 @@ static int setup_flash_device(void)
 
 	/* speed and mode will be read from DT */
 	ret = spi_flash_probe_bus_cs(CONFIG_ENV_SPI_BUS, CONFIG_ENV_SPI_CS,
-				     0, 0, &new);
+				     CONFIG_ENV_SPI_MAX_HZ, CONFIG_ENV_SPI_MODE,
+				     &new);
 	if (ret) {
-		set_default_env("!spi_flash_probe_bus_cs() failed");
+		env_set_default("spi_flash_probe_bus_cs() failed", 0);
 		return ret;
 	}
 
@@ -72,7 +60,7 @@ static int setup_flash_device(void)
 			CONFIG_ENV_SPI_CS,
 			CONFIG_ENV_SPI_MAX_HZ, CONFIG_ENV_SPI_MODE);
 		if (!env_flash) {
-			set_default_env("!spi_flash_probe() failed");
+			env_set_default("spi_flash_probe() failed", 0);
 			return -EIO;
 		}
 	}
@@ -85,7 +73,7 @@ static int setup_flash_device(void)
 static int env_sf_save(void)
 {
 	env_t	env_new;
-	char	*saved_buffer = NULL, flag = OBSOLETE_FLAG;
+	char	*saved_buffer = NULL, flag = ENV_REDUND_OBSOLETE;
 	u32	saved_size, saved_offset, sector;
 	int	ret;
 
@@ -96,13 +84,13 @@ static int env_sf_save(void)
 	ret = env_export(&env_new);
 	if (ret)
 		return -EIO;
-	env_new.flags	= ACTIVE_FLAG;
+	env_new.flags	= ENV_REDUND_ACTIVE;
 
 	if (gd->env_valid == ENV_VALID) {
 		env_new_offset = CONFIG_ENV_OFFSET_REDUND;
-		env_offset = CONFIG_ENV_OFFSET;
+		env_offset = env_get_offset(CONFIG_ENV_OFFSET);
 	} else {
-		env_new_offset = CONFIG_ENV_OFFSET;
+		env_new_offset = env_get_offset(CONFIG_ENV_OFFSET);
 		env_offset = CONFIG_ENV_OFFSET_REDUND;
 	}
 
@@ -173,7 +161,7 @@ static int env_sf_load(void)
 	tmp_env2 = (env_t *)memalign(ARCH_DMA_MINALIGN,
 			CONFIG_ENV_SIZE);
 	if (!tmp_env1 || !tmp_env2) {
-		set_default_env("!malloc() failed");
+		env_set_default("malloc() failed", 0);
 		ret = -EIO;
 		goto out;
 	}
@@ -182,7 +170,7 @@ static int env_sf_load(void)
 	if (ret)
 		goto out;
 
-	read1_fail = spi_flash_read(env_flash, CONFIG_ENV_OFFSET,
+	read1_fail = spi_flash_read(env_flash, env_get_offset(CONFIG_ENV_OFFSET),
 				    CONFIG_ENV_SIZE, tmp_env1);
 	read2_fail = spi_flash_read(env_flash, CONFIG_ENV_OFFSET_REDUND,
 				    CONFIG_ENV_SIZE, tmp_env2);
@@ -214,7 +202,7 @@ static int env_sf_save(void)
 	/* Is the sector larger than the env (i.e. embedded) */
 	if (CONFIG_ENV_SECT_SIZE > CONFIG_ENV_SIZE) {
 		saved_size = CONFIG_ENV_SECT_SIZE - CONFIG_ENV_SIZE;
-		saved_offset = CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE;
+		saved_offset = env_get_offset(CONFIG_ENV_OFFSET) + CONFIG_ENV_SIZE;
 		saved_buffer = malloc(saved_size);
 		if (!saved_buffer)
 			goto done;
@@ -232,13 +220,13 @@ static int env_sf_save(void)
 	sector = DIV_ROUND_UP(CONFIG_ENV_SIZE, CONFIG_ENV_SECT_SIZE);
 
 	puts("Erasing SPI flash...");
-	ret = spi_flash_erase(env_flash, CONFIG_ENV_OFFSET,
+	ret = spi_flash_erase(env_flash, env_get_offset(CONFIG_ENV_OFFSET),
 		sector * CONFIG_ENV_SECT_SIZE);
 	if (ret)
 		goto done;
 
 	puts("Writing to SPI flash...");
-	ret = spi_flash_write(env_flash, CONFIG_ENV_OFFSET,
+	ret = spi_flash_write(env_flash, env_get_offset(CONFIG_ENV_OFFSET),
 		CONFIG_ENV_SIZE, &env_new);
 	if (ret)
 		goto done;
@@ -268,7 +256,7 @@ static int env_sf_load(void)
 
 	buf = (char *)memalign(ARCH_DMA_MINALIGN, CONFIG_ENV_SIZE);
 	if (!buf) {
-		set_default_env("!malloc() failed");
+		env_set_default("malloc() failed", 0);
 		return -EIO;
 	}
 
@@ -277,9 +265,9 @@ static int env_sf_load(void)
 		goto out;
 
 	ret = spi_flash_read(env_flash,
-		CONFIG_ENV_OFFSET, CONFIG_ENV_SIZE, buf);
+		env_get_offset(CONFIG_ENV_OFFSET), CONFIG_ENV_SIZE, buf);
 	if (ret) {
-		set_default_env("!spi_flash_read() failed");
+		env_set_default("spi_flash_read() failed", 0);
 		goto err_read;
 	}
 
@@ -297,10 +285,17 @@ out:
 }
 #endif
 
-#if defined(INITENV) && defined(CONFIG_ENV_ADDR)
+#if CONFIG_ENV_ADDR != 0x0
+__weak void *env_sf_get_env_addr(void)
+{
+	return (void *)CONFIG_ENV_ADDR;
+}
+#endif
+
+#if defined(INITENV) && (CONFIG_ENV_ADDR != 0x0)
 static int env_sf_init(void)
 {
-	env_t *env_ptr = (env_t *)(CONFIG_ENV_ADDR);
+	env_t *env_ptr = (env_t *)env_sf_get_env_addr();
 
 	if (crc32(0, env_ptr->data, ENV_SIZE) == env_ptr->crc) {
 		gd->env_addr	= (ulong)&(env_ptr->data);
@@ -321,7 +316,7 @@ U_BOOT_ENV_LOCATION(sf) = {
 #ifdef CMD_SAVEENV
 	.save		= env_save_ptr(env_sf_save),
 #endif
-#if defined(INITENV) && defined(CONFIG_ENV_ADDR)
+#if defined(INITENV) && (CONFIG_ENV_ADDR != 0x0)
 	.init		= env_sf_init,
 #endif
 };

@@ -22,6 +22,7 @@
 #include <asm/system.h>
 #include <asm/mach-types.h>
 #include <asm/unaligned.h>
+#include <dm/devres.h>
 #include <linux/compat.h>
 #include <malloc.h>
 #include <asm/io.h>
@@ -29,7 +30,6 @@
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
-#include <usb/lin_gadget_compat.h>
 #include <asm/arch/pxa-regs.h>
 
 #include "pxa25x_udc.h"

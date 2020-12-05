@@ -43,6 +43,25 @@ extern struct p_current *current;
 #define dev_warn(dev, fmt, args...)		\
 	printf(fmt, ##args)
 
+#define netdev_emerg(dev, fmt, args...)		\
+	printf(fmt, ##args)
+#define netdev_alert(dev, fmt, args...)		\
+	printf(fmt, ##args)
+#define netdev_crit(dev, fmt, args...)		\
+	printf(fmt, ##args)
+#define netdev_err(dev, fmt, args...)		\
+	printf(fmt, ##args)
+#define netdev_warn(dev, fmt, args...)		\
+	printf(fmt, ##args)
+#define netdev_notice(dev, fmt, args...)	\
+	printf(fmt, ##args)
+#define netdev_info(dev, fmt, args...)		\
+	printf(fmt, ##args)
+#define netdev_dbg(dev, fmt, args...)		\
+	debug(fmt, ##args)
+#define netdev_vdbg(dev, fmt, args...)		\
+	debug(fmt, ##args)
+
 #define GFP_ATOMIC ((gfp_t) 0)
 #define GFP_KERNEL ((gfp_t) 0)
 #define GFP_NOFS ((gfp_t) 0)
@@ -104,7 +123,10 @@ static inline void kmem_cache_destroy(struct kmem_cache *cachep)
 
 #define KERNEL_VERSION(a,b,c)	(((a) << 16) + ((b) << 8) + (c))
 
+/* This is also defined in ARMv8's mmu.h */
+#ifndef PAGE_SIZE
 #define PAGE_SIZE	4096
+#endif
 
 /* drivers/char/random.c */
 #define get_random_bytes(...)

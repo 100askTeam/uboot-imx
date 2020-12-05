@@ -4,6 +4,7 @@
  */
 #include <common.h>
 #include <debug_uart.h>
+#include <hang.h>
 #include <spl.h>
 
 #include <asm/io.h>
@@ -29,6 +30,9 @@ void board_init_f(ulong dummy)
 void spl_board_init(void)
 {
 	preloader_console_init();
+#if defined(CONFIG_ARCH_EARLY_INIT_R) && defined(CONFIG_SPL_FPGA_SUPPORT)
+	arch_early_init_r();
+#endif
 	board_init();
 }
 #endif

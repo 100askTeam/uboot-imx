@@ -61,8 +61,15 @@ obj-$(CONFIG_ZM7300)		+= zm7300.o
 obj-$(CONFIG_POWER_PFUZE100)	+= pfuze.o
 obj-$(CONFIG_DM_PMIC_PFUZE100)	+= pfuze.o
 obj-$(CONFIG_POWER_MC34VR500)	+= mc34vr500.o
+obj-$(CONFIG_MXC_EPDC)		+= epdc_setup.o
+obj-y				+= mmc.o
+ifdef CONFIG_FSL_FASTBOOT
+obj-${CONFIG_ANDROID_RECOVERY} += recovery_keypad.o
+endif
 
 obj-$(CONFIG_LS102XA_STREAM_ID)	+= ls102xa_stream_id.o
+
+obj-$(CONFIG_EMC2305)              += emc2305.o
 
 # deal with common files for P-series corenet based devices
 obj-$(CONFIG_TARGET_P2041RDB)	+= p_corenet/
@@ -73,9 +80,13 @@ obj-$(CONFIG_TARGET_P5040DS)	+= p_corenet/
 
 obj-$(CONFIG_LAYERSCAPE_NS_ACCESS)	+= ns_access.o
 
-ifdef CONFIG_SECURE_BOOT
+ifdef CONFIG_NXP_ESBC
 obj-$(CONFIG_CMD_ESBC_VALIDATE) += fsl_validate.o cmd_esbc_validate.o
 endif
 obj-$(CONFIG_CHAIN_OF_TRUST) += fsl_chain_of_trust.o
+
+ifndef CONFIG_SPL_BUILD
+obj-$(CONFIG_USB_TCPC) += tcpc.o
+endif
 
 endif

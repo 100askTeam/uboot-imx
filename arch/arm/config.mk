@@ -65,8 +65,7 @@ endif
 checkgcc6:
 	@if test "$(call cc-name)" = "gcc" -a \
 			"$(call cc-version)" -lt "0600"; then \
-		echo '*** Your GCC is older than 6.0 and is not supported'; \
-		false; \
+		echo '*** Your GCC is older than 6.0 and will not be supported'; \
 	fi
 
 
@@ -134,11 +133,11 @@ endif
 ifdef CONFIG_ARM64
 OBJCOPYFLAGS += -j .text -j .secure_text -j .secure_data -j .rodata -j .data \
 		-j .u_boot_list -j .rela.dyn -j .got -j .got.plt \
-		-j .binman_sym_table
+		-j .binman_sym_table -j .text_rest
 else
 OBJCOPYFLAGS += -j .text -j .secure_text -j .secure_data -j .rodata -j .hash \
 		-j .data -j .got -j .got.plt -j .u_boot_list -j .rel.dyn \
-		-j .binman_sym_table
+		-j .binman_sym_table -j .text_rest
 endif
 
 # if a dtb section exists we always have to include it
@@ -149,6 +148,10 @@ OBJCOPYFLAGS += -j .dtb.init.rodata
 
 ifdef CONFIG_EFI_LOADER
 OBJCOPYFLAGS += -j .efi_runtime -j .efi_runtime_rel
+endif
+
+ifdef CONFIG_IMX_M4_BIND
+OBJCOPYFLAGS += -j .firmware_image
 endif
 
 ifneq ($(CONFIG_IMX_CONFIG),)

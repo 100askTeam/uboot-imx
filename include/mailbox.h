@@ -44,6 +44,7 @@ struct udevice;
  *
  * @dev: The device which implements the mailbox.
  * @id: The mailbox channel ID within the provider.
+ * @con_priv: Hook for controller driver to attach private data
  *
  * Currently, the mailbox API assumes that a single integer ID is enough to
  * identify and configure any mailbox channel for any mailbox provider. If this
@@ -56,11 +57,9 @@ struct udevice;
  */
 struct mbox_chan {
 	struct udevice *dev;
-	/*
-	 * Written by of_xlate. We assume a single id is enough for now. In the
-	 * future, we might add more fields here.
-	 */
+	/* Written by of_xlate.*/
 	unsigned long id;
+	void *con_priv;
 };
 
 /**
@@ -123,7 +122,7 @@ int mbox_free(struct mbox_chan *chan);
  *		will ignore this parameter.
  * @return 0 if OK, or a negative error code.
  */
-int mbox_send(struct mbox_chan *chan, const void *data);
+int mbox_send(struct mbox_chan *chan, const void *data, ulong timeout_us);
 
 /**
  * mbox_recv - Receive any available message from a mailbox channel

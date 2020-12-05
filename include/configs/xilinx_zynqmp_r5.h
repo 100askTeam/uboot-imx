@@ -16,8 +16,6 @@
 #define CONFIG_SYS_BAUDRATE_TABLE  \
 	{300, 600, 1200, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400}
 
-# define CONFIG_ENV_SIZE	(128 << 10)
-
 /* Allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
 
@@ -25,8 +23,6 @@
 #define CONFIG_SYS_LOAD_ADDR		0 /* default? */
 
 #define CONFIG_SYS_MAXARGS		32 /* max number of command args */
-
-#define CONFIG_NR_DRAM_BANKS		1
 
 #define CONFIG_SYS_MALLOC_LEN		0x1400000
 
@@ -38,8 +34,6 @@
 
 /* Extend size of kernel image for uncompression */
 #define CONFIG_SYS_BOOTM_LEN	(60 * 1024 * 1024)
-
-#define CONFIG_SYS_UBOOT_START	CONFIG_SYS_TEXT_BASE
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
 

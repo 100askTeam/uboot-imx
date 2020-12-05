@@ -4,6 +4,7 @@
  */
 
 #include <common.h>
+#include <init.h>
 #include <mmc.h>
 #include <pci_ids.h>
 #include <asm/irq.h>
@@ -54,10 +55,4 @@ int arch_misc_init(void)
 		     BYT_TRIG_LVL | BYT_TRIG_POS);
 
 	return 0;
-}
-
-void reset_cpu(ulong addr)
-{
-	/* cold reset */
-	x86_full_reset();
 }
